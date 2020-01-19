@@ -67,7 +67,8 @@ namespace UnityStandardAssets.Vehicles.Car
 
 
             // this is how you control the car
-            m_Car.Move(1f, 1f, 1f, 0f);
+            // Move(float steering, float accel, float footbrake, float handbrake)
+            m_Car.Move(1f, 1f, 1f, 0f); // steer [-1, 1], accel [0, 1], footbrake [-1, 0], handbrake [0, 1]
 
         }
     }
