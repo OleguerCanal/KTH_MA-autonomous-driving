@@ -1,6 +1,98 @@
 Base path: '/home/oleguer/software/Unity/Hub/Editor/2019.2.17f1/Editor/Data', plugins path '/home/oleguer/software/Unity/Hub/Editor/2019.2.17f1/Editor/Data/PlaybackEngines'
 Cmd: initializeCompiler
-Cmd: compileSnippet
-  api=15 type=1 insize=158683 outsize=0 kw=UNITY_PASS_FORWARDBASE DIRECTIONAL SHADOWS_SCREEN LIGHTMAP_ON DIRLIGHTMAP_COMBINED SHADOWS_SHADOWMASK pd=UNITY_ENABLE_REFLECTION_BUFFERS UNITY_USE_DITHER_MASK_FOR_ALPHABLENDED_SHADOWS UNITY_PBS_USE_BRDF1 UNITY_SPECCUBE_BOX_PROJECTION UNITY_SPECCUBE_BLENDING UNITY_ENABLE_DETAIL_NORMALMAP SHADER_API_DESKTOP UNITY_COLORSPACE_GAMMA UNITY_LIGHT_PROBE_PROXY_VOLUME UNITY_LIGHTMAP_FULL_HDR ok=1
+Cmd: compileComputeKernel
+  api=15 insize=7960 outsize=2786 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=7960 outsize=6497 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=7960 outsize=4629 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=7960 outsize=5935 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=7960 outsize=5715 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=64076 outsize=15985 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=9919 outsize=4317 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=9919 outsize=4363 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=9919 outsize=7283 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=24335 outsize=9351 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=24335 outsize=48316 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=7335 outsize=7660 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=7335 outsize=6643 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=44336 outsize=3918 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=44336 outsize=3412 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=44336 outsize=6753 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=44336 outsize=3795 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=44336 outsize=3973 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=44336 outsize=4507 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=44336 outsize=4546 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=44336 outsize=6163 ok=1
+Cmd: compileComputeKernel
+  error: 1 plat 18 at BarracudaReferenceImpl.compute(1256): array reference cannot be used as an l-value; not natively addressable, forcing loop to unroll
+  error: 1 plat 18 at BarracudaReferenceImpl.compute(1266): array reference cannot be used as an l-value; not natively addressable, forcing loop to unroll
+  api=18 insize=44336 outsize=32219 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=4081 outsize=4061 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=2077 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=2119 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=2360 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=2236 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=2081 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=3215 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=4314 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=3326 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=3247 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=3258 ok=1
+Cmd: compileComputeKernel
+  api=15 insize=29386 outsize=3353 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=2439 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=3757 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=3382 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=3193 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=3373 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=3471 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=7492 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=5584 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=5691 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=5607 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=5765 ok=1
+Cmd: compileComputeKernel
+  api=18 insize=29386 outsize=5751 ok=1
 
 Quitting shader compiler process
