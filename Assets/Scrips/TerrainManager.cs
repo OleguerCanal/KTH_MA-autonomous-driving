@@ -9,7 +9,7 @@ public class TerrainManager : MonoBehaviour {
 
     //public TestScriptNoObject testNoObject = new TestScriptNoObject();
 
-    public string terrain_filename = "Text/terrain";
+    public string terrain_filename = "Text/terrainC";
     public TerrainInfo myInfo;
 
     public GameObject flag;
@@ -25,6 +25,7 @@ public class TerrainManager : MonoBehaviour {
     void Awake()
     {
 
+        Debug.LogWarning(terrain_filename);
         var jsonTextFile = Resources.Load<TextAsset>(terrain_filename);
 
         myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text);

@@ -45,28 +45,23 @@ namespace UnityStandardAssets.Vehicles.Car
         }
 
 
-        // public float speed = 10;
         public override void AgentAction(float[] vectorAction)
         {
-            // Actions, size = 2
-            // Vector3 controlSignal = Vector3.zero;
-            // controlSignal.x = vectorAction[0];
-            // controlSignal.z = vectorAction[1];
-            // rBody.AddForce(controlSignal * speed);
-            m_Car.Move(vectorAction[0], vectorAction[1], vectorAction[2], vectorAction[3]);
+            // m_Car.Move(vectorAction[0], vectorAction[1], vectorAction[2], vectorAction[3]);
+            m_Car.Move(vectorAction[0], vectorAction[1], 0.0f, 0.0f);
 
             // Rewards
             float distanceToTarget = Vector3.Distance(this.transform.position,
                                                     terrain_manager.myInfo.goal_pos);
 
-            // SetReward(-0.01f);  // Discount for time?
-            // SetReward(distanceToTarget);
+            // SetReward(-distanceToTarget);
+
 
             // Reached target
-            if (distanceToTarget < 1.42f)
+            if (distanceToTarget < 3f)
             {
                 Debug.Log("Done!");
-                SetReward(1000.0f);
+                SetReward(999999.0f);
                 Done();
             }
 
@@ -75,7 +70,7 @@ namespace UnityStandardAssets.Vehicles.Car
             {
                 Debug.Log("Time Limit");
                 // SetReward(-0.01f);  // Discount for time?
-                SetReward(-distanceToTarget);
+                SetReward(-100);
                 Done();
             }
 
@@ -83,11 +78,12 @@ namespace UnityStandardAssets.Vehicles.Car
 
         public override float[] Heuristic()
         {
-            var action = new float[4];
+            // var action = new float[4];
+            var action = new float[2];
             action[0] = Input.GetAxis("Horizontal");
             action[1] = Input.GetAxis("Vertical");
-            action[2] = 0;
-            action[3] = 0;
+            // action[2] = 0;
+            // action[3] = 0;
             return action;
         }
     }

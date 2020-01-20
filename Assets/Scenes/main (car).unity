@@ -507,7 +507,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target_object: {fileID: 1739708546}
-  behind: 5
+  behind: 6
   above: 2
 --- !u!1 &591826795
 GameObject:
@@ -616,7 +616,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de0a9b23fa3784d75b3bdd0088f57e67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trajectory_filename: Text/TrajA_example2
+  trajectory_filename: Text/trajectory
   recordedInfo:
     position_array: []
     rotation_array: []
@@ -624,7 +624,7 @@ MonoBehaviour:
     file_name: 
     json_string: 
   RecordingOn: 0
-  PlaybackOn: 1
+  PlaybackOn: 0
   position_list: []
   rotation_list: []
   time_list: []
@@ -721,7 +721,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de0a9b23fa3784d75b3bdd0088f57e67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trajectory_filename: Text/TrajA_example4
+  trajectory_filename: Text/trajectory
   recordedInfo:
     position_array: []
     rotation_array: []
@@ -729,7 +729,7 @@ MonoBehaviour:
     file_name: 
     json_string: 
   RecordingOn: 0
-  PlaybackOn: 1
+  PlaybackOn: 0
   position_list: []
   rotation_list: []
   time_list: []
@@ -778,7 +778,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed951abcb196b40f38b3699dfa82c76c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrain_filename: text/terrainC
+  terrain_filename: Text/saved_terrain
   myInfo:
     file_name: 
     x_low: 0
@@ -789,7 +789,7 @@ MonoBehaviour:
     z_N: 0
     start_pos: {x: 0, y: 0, z: 0}
     goal_pos: {x: 0, y: 0, z: 0}
-  flag: {fileID: 4434580643111549203, guid: 8e0d60321797749079c9a8ec5e90a2d6, type: 3}
+  flag: {fileID: 100000, guid: f740a2f99073e4402a68eeff431f2a68, type: 3}
 --- !u!4 &1358011050
 Transform:
   m_ObjectHideFlags: 0
@@ -833,7 +833,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de0a9b23fa3784d75b3bdd0088f57e67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trajectory_filename: Text/TrajA_example1
+  trajectory_filename: Text/trajectory
   recordedInfo:
     position_array: []
     rotation_array: []
@@ -841,7 +841,7 @@ MonoBehaviour:
     file_name: 
     json_string: 
   RecordingOn: 0
-  PlaybackOn: 1
+  PlaybackOn: 0
   position_list: []
   rotation_list: []
   time_list: []
@@ -930,7 +930,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 11400002, guid: 0e7ee4df08df88c4880f43398f9ad2c2, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 11400022, guid: 0e7ee4df08df88c4880f43398f9ad2c2, type: 3}
       propertyPath: m_Enabled
@@ -1038,14 +1038,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de0a9b23fa3784d75b3bdd0088f57e67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trajectory_filename: Text/Traj
+  trajectory_filename: Text/trajectory
   recordedInfo:
     position_array: []
     rotation_array: []
     time_array: []
     file_name: 
     json_string: 
-  RecordingOn: 1
+  RecordingOn: 0
   PlaybackOn: 0
   position_list: []
   rotation_list: []
@@ -1069,7 +1069,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57f37a74d9bc64bfab28e1fee11436aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrain_manager_game_object: {fileID: 1358011048}
+  terrain_manager_game_object: {fileID: 0}
 --- !u!114 &1739708548
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1085,13 +1085,13 @@ MonoBehaviour:
   m_BrainParameters:
     vectorObservationSize: 8
     numStackedVectorObservations: 1
-    vectorActionSize: 04000000
+    vectorActionSize: 02000000
     vectorActionDescriptions: []
     vectorActionSpaceType: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
-  m_BehaviorName: CarBrain
+  m_BehaviorType: 0
+  m_BehaviorName: CarAgent
   m_TeamID: 0
   m_useChildSensors: 1
 --- !u!114 &1739708549
@@ -1110,8 +1110,9 @@ MonoBehaviour:
     maxStep: 0
     resetOnDone: 1
     onDemandDecision: 0
-    numberOfActionsBetweenDecisions: 10
+    numberOfActionsBetweenDecisions: 5
   terrain_manager_game_object: {fileID: 1358011048}
+  time_limit: 20
 --- !u!1 &1788454091
 GameObject:
   m_ObjectHideFlags: 0
@@ -1216,7 +1217,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de0a9b23fa3784d75b3bdd0088f57e67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trajectory_filename: Text/TrajA_example3
+  trajectory_filename: Text/trajectory
   recordedInfo:
     position_array: []
     rotation_array: []
@@ -1224,7 +1225,7 @@ MonoBehaviour:
     file_name: 
     json_string: 
   RecordingOn: 0
-  PlaybackOn: 1
+  PlaybackOn: 0
   position_list: []
   rotation_list: []
   time_list: []
