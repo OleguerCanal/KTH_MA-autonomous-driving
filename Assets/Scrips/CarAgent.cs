@@ -24,55 +24,66 @@ namespace UnityStandardAssets.Vehicles.Car
 
         public override void AgentReset()
         {
-            if (Time.time - timer > time_limit) // TODO(oleguer): Add colision here
-            {
-                this.rBody.velocity = Vector3.zero;
-                this.transform.position = terrain_manager.myInfo.start_pos;
-                this.transform.rotation = Quaternion.Euler(0, 0, 0);
-                timer = Time.time;
-            }
+            //if (Time.time - timer > time_limit) // TODO(oleguer): Add colision here
+            //{
+            this.rBody.velocity = Vector3.zero;
+            this.transform.position = terrain_manager.myInfo.start_pos;
+            this.transform.rotation = Quaternion.Euler(0, 0, 0);
+            timer = Time.time;
+            //}
+            tot_steer = 0;
+            tot_acc = 0;
+            nsteer = 0;
+            nacc = 0;
         }
 
         public override void CollectObservations()
         {
             // Target and Agent positions, velocity
-            AddVectorObs(terrain_manager.myInfo.goal_pos);
-            AddVectorObs(this.transform.position);
+            Vector3 goal_relative = this.transform.InverseTransformPoint(terrain_manager.myInfo.goal_pos);
+            AddVectorObs(goal_relative.x);
+            AddVectorObs(goal_relative.z);
 
             // Agent velocity
             AddVectorObs(rBody.velocity.x);
             AddVectorObs(rBody.velocity.z);
         }
 
-
+        float tot_steer = 0;
+        float tot_acc = 0;
+        int nsteer = 0;
+        int nacc = 0;
         public override void AgentAction(float[] vectorAction)
         {
+            float steer = vectorAction[0];
+            float acc = vectorAction[1];
+            tot_steer+=steer;
+            tot_acc+=acc;
+            nsteer++;
+            nacc++;
+            Debug.Log("steer: "+steer+"     acc: "+acc);
+            Debug.Log("avg steer: "+(tot_steer/nsteer)+"    avg acc: "+(tot_acc/nacc));
+            
             // m_Car.Move(vectorAction[0], vectorAction[1], vectorAction[2], vectorAction[3]);
-            m_Car.Move(vectorAction[0], vectorAction[1], 0.0f, 0.0f);
+            m_Car.Move(steer, acc, acc, 0.0f);
 
-            // Rewards
             float distanceToTarget = Vector3.Distance(this.transform.position,
                                                     terrain_manager.myInfo.goal_pos);
-
-            // SetReward(-distanceToTarget);
-
 
             // Reached target
             if (distanceToTarget < 3f)
             {
+                SetReward(1.0f);
                 Debug.Log("Done!");
-                SetReward(999999.0f);
                 Done();
             }
-
             // Timer
             if (Time.time - timer > time_limit)
             {
                 Debug.Log("Time Limit");
-                // SetReward(-0.01f);  // Discount for time?
-                SetReward(-100);
                 Done();
             }
+            SetReward(-0.01f * Mathf.Atan(distanceToTarget));
 
         }
 
