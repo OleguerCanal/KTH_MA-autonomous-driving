@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.4465785, g: 0.49641252, b: 0.574817, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -759,6 +759,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1358011050}
   - component: {fileID: 1358011049}
+  - component: {fileID: 1358011051}
   m_Layer: 0
   m_Name: TerrainManager
   m_TagString: Untagged
@@ -778,7 +779,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed951abcb196b40f38b3699dfa82c76c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrain_filename: Text/saved_terrain
+  terrain_filename: Text/terrainC
   myInfo:
     file_name: 
     x_low: 0
@@ -804,6 +805,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1358011051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1358011048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1926e70b2064a5252ada8762d3a60648, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  margin: 4
+  terrain_manager_game_object: {fileID: 1358011048}
+  path_points: []
 --- !u!1 &1387027770
 GameObject:
   m_ObjectHideFlags: 0
@@ -1083,15 +1099,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    vectorObservationSize: 8
+    vectorObservationSize: 4
     numStackedVectorObservations: 1
-    vectorActionSize: 02000000
+    vectorActionSize: 0b00000003000000
     vectorActionDescriptions: []
-    vectorActionSpaceType: 1
+    vectorActionSpaceType: 0
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
   m_BehaviorType: 0
-  m_BehaviorName: CarAgent
+  m_BehaviorName: My Behavior
   m_TeamID: 0
   m_useChildSensors: 1
 --- !u!114 &1739708549
@@ -1112,7 +1128,10 @@ MonoBehaviour:
     onDemandDecision: 0
     numberOfActionsBetweenDecisions: 5
   terrain_manager_game_object: {fileID: 1358011048}
-  time_limit: 20
+  flag: {fileID: 100000, guid: f740a2f99073e4402a68eeff431f2a68, type: 3}
+  visibilityGraph: {fileID: 0}
+  time_limit: 40
+  augmentedPath: []
 --- !u!1 &1788454091
 GameObject:
   m_ObjectHideFlags: 0

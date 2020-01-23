@@ -25,7 +25,7 @@ public class TerrainManager : MonoBehaviour {
     void Awake()
     {
 
-        Debug.LogWarning(terrain_filename);
+        
         var jsonTextFile = Resources.Load<TextAsset>(terrain_filename);
 
         myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text);
@@ -39,8 +39,8 @@ public class TerrainManager : MonoBehaviour {
         //string myString = myInfo.SaveToString();
         //myInfo.WriteDataToFile(myString);
 
-        Instantiate(flag, myInfo.start_pos, Quaternion.identity);
-        Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
+        //Instantiate(flag, myInfo.start_pos, Quaternion.identity);
+        //Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
 
 
 
@@ -155,6 +155,7 @@ public class TerrainInfo
                 if (traversability[i, j] > 0.5f)
                 {
                     GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    cube.tag = "obstacle";
                     cube.transform.position = new Vector3(get_x_pos(i), 0.0f, get_z_pos(j));
                     cube.transform.localScale = new Vector3(x_step, 15.0f, z_step);
                 }

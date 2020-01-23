@@ -1,0 +1,22 @@
+Things to check before compiling:
+    1 Check under Edit->Project settings -> Player -> Resolution and presentation
+      that "Run in background" is enabled and "Display resolution dialog" is disabled
+    2 Check under Edit->Project settings -> Player -> Other settings that
+      App Compatibility Level is set to .Net 4.x
+    3 IMPORTANT: Check that Actions are Discrete with 2 branches of size 11 and 3
+    4 IMPORTANT: The timescale and fixed update step are set in the code, in CarAgent.Start()
+
+
+How to run the training:
+    With mlagents-learn:
+        1. Compile the scene by going to File -> Build Settings, check that the main (car) scene is selected (otherwise
+                select it by clicking on "Add Open Scenes"), select your platform, and click build.
+        2. Save the build files (both the executable and the data folder) NOT inside the Assets folder
+        3. Edit the training file in configs/ as you prefer (follow github.com/Unity-Technologies/ml-agents/blob/master/docs/Training-PPO.md)
+           or github.com/Unity-Technologies/ml-agents/blob/master/docs/Training-SAC.md
+        4. Run mlagents-learn configs/<training conf file> --env=<path to binary> --no-graphics --train
+            4.1 If you want to see something, remove --no-graphics. If you want to see tensorboard plots, run tensorboard --logdir=summaries
+    With python:
+        1. Open python~/train_unity.py and modify the path to the binary with your path
+        2. Run the python script
+            
