@@ -6,3 +6,10 @@
 !Assets/Scrips/.
 !python~/.
 
+python~/bin
+python~/bin*
+python~/csharp_timers.json
+python~/envs
+python~/include*
+python~/lib*
+python~/logs*
