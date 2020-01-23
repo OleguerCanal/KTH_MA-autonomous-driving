@@ -1,10 +1,11 @@
 # Ignore everything
-*
+/*
+/*/
 
 # But not these files...
 !.gitignore
-!Assets/Scrips/.
-!python~/.
+!/Assets/Scrips/.
+!/python~/.
 
 python~/bin
 python~/bin*
