@@ -17,3 +17,6 @@ python~/envs
 python~/include*
 python~/lib*
 python~/logs*
+
+*.meta
+/*.meta
