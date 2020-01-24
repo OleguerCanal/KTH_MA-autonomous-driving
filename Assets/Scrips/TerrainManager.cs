@@ -14,7 +14,6 @@ public class TerrainManager : MonoBehaviour {
 
     public GameObject flag;
 
-
     // Use this for initialization
     void Start()
     {
@@ -25,13 +24,11 @@ public class TerrainManager : MonoBehaviour {
     void Awake()
     {
 
-        
         var jsonTextFile = Resources.Load<TextAsset>(terrain_filename);
 
         myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text);
 
         myInfo.CreateCubes();
-
 
         // this code is used to create new terrains and obstacles
         //myInfo.TerrainInfo2();
@@ -39,11 +36,78 @@ public class TerrainManager : MonoBehaviour {
         //string myString = myInfo.SaveToString();
         //myInfo.WriteDataToFile(myString);
 
+        // Uncomment this to display start and goal flags
         //Instantiate(flag, myInfo.start_pos, Quaternion.identity);
         //Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
+        List<Vector3> randomPoints = GenerateTrajectory(20, 10, 90);
+        for (int i = 0; i < randomPoints.Count - 1; i++) {
+            Debug.DrawLine(randomPoints[i], randomPoints[i+1], Color.red, 100);
+        }
+    }
 
+    List<Vector3> GenerateTrajectory(int npoints, int distance, float maxtheta) {
+        // Generate random trajectory of npoints with the given distance. Each point is
+        // At no more than +- maxtheta degrees from the precedent
+        float margin = 4;
+        float y = myInfo.start_pos.y;
+        List<Vector3> points = new List<Vector3>();
+        points.Add(myInfo.start_pos);
+        Vector3 secondPoint = new Vector3(221, y, 230);
+        points.Add(secondPoint);
+        for (int i = 1; i < npoints; i++) {
+            Vector3 nextPoint;
+            do {
+                nextPoint = GenerateNewPoint(points[i - 1], points[i], distance, maxtheta);
+            } while (!InsideMap(nextPoint, margin));
+            points.Add(nextPoint);
+        }
+        return points;
+    }
 
+    Vector3 GenerateNewPoint(Vector3 pointA, Vector3 pointB, float distance, float maxtheta) {
+        // pointB and pointA are respectively the last and last - 1 points
+        // Generate the next point with the given maximum angle from the direction
+        // pointA -> pointB and the given distance from pointB
+        Transform lastPointTransform = GetTransformedDirection(pointA, pointB);
+        Vector3 forward = new Vector3(0, 0, distance);
+        float rotation = SampleFromNormal(maxtheta);
+        Vector3 rotatedRelative = Quaternion.Euler(0, rotation, 0) * forward;
+        Vector3 newPoint = lastPointTransform.TransformPoint(rotatedRelative);
+        return newPoint;
+    }
 
+    Transform GetTransformedDirection(Vector3 pointA, Vector3 pointB) {
+        // Returns a Transform with position = pointB, orientated
+        // in the direction pointA -> pointB
+        Vector3 direction = (pointB - pointA).normalized;
+        GameObject empty = new GameObject();
+        Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
+        empty.transform.position = pointB;
+        empty.transform.rotation = rotation;
+        return empty.transform;
+    }
+
+    float SampleFromNormal(float maxtheta, float stdev) {
+        // Sample from normal distribution with zero mean and given stdev
+        int n = Mathf.CeilToInt(3 * Mathf.Pow(stdev, 2) / Mathf.Pow(maxtheta, 2));
+        float tot = 0;
+        for (int i = 0; i < n; i++) {
+            tot += Random.Range(-maxtheta, +maxtheta);
+        }
+        return tot / n;
+    }
+
+    bool InsideMap(Vector3 point, float margin) {
+        float x_step = (myInfo.x_high - myInfo.x_low) / myInfo.x_N;
+        float z_step = (myInfo.z_high - myInfo.z_low) / myInfo.z_N;
+
+        if (point.x < myInfo.x_low + x_step + margin || point.x > myInfo.x_high - x_step - margin) {
+            return false;
+        }
+        if (point.z < myInfo.z_low + z_step + margin || point.z > myInfo.z_high - z_step - margin) {
+            return false;
+        }
+        return true;
     }
 
 
@@ -187,6 +251,5 @@ public class TerrainInfo
         UnityEditor.AssetDatabase.Refresh();
 #endif
     }
-
 
 }
