@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using System.Linq;
 
 public class VisibilityGraph : MonoBehaviour {
 
@@ -34,25 +34,33 @@ public class VisibilityGraph : MonoBehaviour {
         path_points = new List<Vector3>();
         foreach (int path_index in path_indexes) {
             path_points.Add(corners[path_index]);
-            if (path_index > 0) {
-                DrawLine(path_points[path_points.Count-1], path_points[path_points.Count - 2], Color.yellow);
-            }
+            //if (path_index > 0) {
+            //    DrawLine(path_points[path_points.Count-1], path_points[path_points.Count - 2], Color.yellow);
+            //}
         }
 	}
+
+    private List<Vector3> GetAugmentedPath() {
+        float distance = 9;
+        List<Vector3> augmentedPath = new List<Vector3>();
+        for (int i = 0; i < path_points.Count - 1; i++) {
+            Vector3 start = path_points[i];
+            Vector3 end = path_points[i+1];
+            Vector3 unit = (end - start).normalized;
+            int n_new_points = Mathf.FloorToInt(Vector3.Distance(start, end) / distance);
+            augmentedPath.Add(start);
+            for (int j = 0; j < n_new_points; j++) {
+                Vector3 new_point = start + (j + 1) * distance * unit;
+                augmentedPath.Add(new_point);
+            }
+        }
+        augmentedPath.Add(path_points.Last());
+        return augmentedPath;
+    }
 	
 	// Update is called once per frame
 	void Update () {
 	}
-
-    private void DrawLine(Vector3 a, Vector3 b, Color color)
-    {
-        var go = new GameObject();
-        var lr = go.AddComponent<LineRenderer>();
-        lr.SetPosition(0, a);
-        lr.SetPosition(1, b);
-        lr.SetColors(color, color);
-        // lr.SetWidth(0.1f, 0.1f);
-    }
 
     float[, ] get_adjacency_matrix(List<Vector3> corners) {
         float[, ] adjancenies = new float[corners.Count, corners.Count];
@@ -70,5 +78,5 @@ public class VisibilityGraph : MonoBehaviour {
             }
         }
         return adjancenies;
-}
+    }
 }

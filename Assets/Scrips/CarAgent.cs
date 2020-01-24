@@ -21,8 +21,6 @@ namespace UnityStandardAssets.Vehicles.Car
         public List<Vector3> augmentedPath;
         int next_checkpoint_idx = 1;
         float checkpoint_threshold = 4;
-        int nobservations = 0;
-        int nactions = 0;
         float cum_reward = 0;
         float[] accelerations = new float[] {-1, 0, 1};
         float[] steerings = new float[] {-1, -0.8f, -0.6f, -0.4f, -0.2f, 0, 0.2f, 0.4f, 0.6f, 0.8f, 1};
@@ -30,65 +28,44 @@ namespace UnityStandardAssets.Vehicles.Car
             m_Car = GetComponent<CarController>();
             rBody = GetComponent<Rigidbody>();
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
-            visibilityGraph = terrain_manager.GetComponent<VisibilityGraph>();
+            //visibilityGraph = terrain_manager.GetComponent<VisibilityGraph>(); 
             //augmentedPath =  AugmentPath();
-            augmentedPath = visibilityGraph.path_points;
-            foreach (Vector3 point in augmentedPath) {
-                GameObject check_flag = Instantiate(flag, point, Quaternion.identity);
-                DrawCircle(check_flag, checkpoint_threshold, 1);
-            }
+            //augmentedPath = visibilityGraph.path_points;
+            augmentedPath = terrain_manager.GenerateTrajectory(25, 25, 90);
             timer = Time.time;
             Time.timeScale = 1;
             Time.fixedDeltaTime = 0.02f;
         }
 
-        private List<Vector3> AugmentPath() {
-            float distance = 9;
-
-            List<Vector3> augmentedPath = new List<Vector3>();
-
-            for (int i = 0; i < visibilityGraph.path_points.Count - 1; i++) {
-                Vector3 start = visibilityGraph.path_points[i];
-                Vector3 end = visibilityGraph.path_points[i+1];
-                Vector3 unit = (end - start).normalized;
-                int n_new_points = Mathf.FloorToInt(Vector3.Distance(start, end) / distance);
-
-                augmentedPath.Add(start);
-                for (int j = 0; j < n_new_points; j++) {
-                    Vector3 new_point = start + (j + 1) * distance * unit;
-                    augmentedPath.Add(new_point);
-                }
-            }
-            augmentedPath.Add(visibilityGraph.path_points.Last());
-            return augmentedPath;
-        }
-
         public override void AgentReset()
         {
-            //Debug.Log("Reset. nobservations: "+nobservations+"  nactions: "+nactions+"   cum_reward: "+cum_reward);
             this.rBody.velocity = Vector3.zero;
             this.transform.position = terrain_manager.myInfo.start_pos;
             this.transform.rotation = Quaternion.Euler(0, 0, 0);
             next_checkpoint_idx = 1;
             timer = Time.time;
-            nobservations = 0;
-            nactions = 0;
             cum_reward = 0;
+            augmentedPath = terrain_manager.GenerateTrajectory(25, 25, 90);
+            terrain_manager.DrawPath(augmentedPath, checkpoint_threshold);
         }
 
         public override void CollectObservations()
         {
+            float width = terrain_manager.myInfo.x_high - terrain_manager.myInfo.x_low;
+            float height = terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low;
+            float diagonal = Mathf.Sqrt(Mathf.Pow(width, 2) + Mathf.Pow(height, 2));
+
             Vector3 next_checkpoint = augmentedPath[next_checkpoint_idx];
             Vector3 next_checkpoint_direction = next_checkpoint - transform.position;
             Vector3 next_checkpoint_direction_relative = transform.InverseTransformDirection(next_checkpoint_direction);
-            AddVectorObs(next_checkpoint_direction_relative.x / 100);
-            AddVectorObs(next_checkpoint_direction_relative.z / 100);
+            AddVectorObs(next_checkpoint_direction_relative.x / diagonal);
+            AddVectorObs(next_checkpoint_direction_relative.z / diagonal);
             
             Vector3 velocity_relative = transform.InverseTransformDirection(rBody.velocity);
             // Agent velocity
-            AddVectorObs(velocity_relative.x / 100);
-            AddVectorObs(velocity_relative.z / 100);
-            nobservations ++;
+            AddVectorObs(velocity_relative.x / diagonal);
+            AddVectorObs(velocity_relative.z / diagonal);
+            //terrain_manager.DrawLine(transform.position, augmentedPath[next_checkpoint_idx], Color.red);
         }
 
 
@@ -100,6 +77,7 @@ namespace UnityStandardAssets.Vehicles.Car
             Vector3 next_checkpoint = augmentedPath[next_checkpoint_idx];
             if (Vector3.Distance(transform.position, next_checkpoint) < checkpoint_threshold) {
                 if (next_checkpoint_idx == augmentedPath.Count - 1) {
+                    Debug.Log("Finished!");
                     SetReward(1.0f);
                     cum_reward += 1.0f;
                     Done();
@@ -123,7 +101,6 @@ namespace UnityStandardAssets.Vehicles.Car
             int steer = (int) vectorAction[0];
             int acc = (int) vectorAction[1];
             m_Car.Move(steerings[steer], accelerations[acc], accelerations[acc], 0.0f);
-            nactions++;
         }
 
         public override float[] Heuristic()
@@ -147,26 +124,6 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
             }
             return discreteAction;
-        }
-
-        public void DrawCircle(GameObject gameObject, float radius, float lineWidth) {
-            var segments = 360;
-            var line = gameObject.AddComponent<LineRenderer>();
-            line.useWorldSpace = false;
-            line.startWidth = lineWidth;
-            line.endWidth = lineWidth;
-            line.positionCount = segments + 1;
-
-            var pointCount = segments + 1; // add extra point to make startpoint and endpoint the same to close the circle
-            var points = new Vector3[pointCount];
-
-            for (int i = 0; i < pointCount; i++)
-            {
-                var rad = Mathf.Deg2Rad * (i * 360f / segments);
-                points[i] = new Vector3(Mathf.Sin(rad) * radius, 0, Mathf.Cos(rad) * radius);
-            }
-
-            line.SetPositions(points);
         }
     }
 }

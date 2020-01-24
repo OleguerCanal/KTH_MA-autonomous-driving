@@ -39,13 +39,11 @@ public class TerrainManager : MonoBehaviour {
         // Uncomment this to display start and goal flags
         //Instantiate(flag, myInfo.start_pos, Quaternion.identity);
         //Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
-        List<Vector3> randomPoints = GenerateTrajectory(20, 10, 90);
-        for (int i = 0; i < randomPoints.Count - 1; i++) {
-            Debug.DrawLine(randomPoints[i], randomPoints[i+1], Color.red, 100);
-        }
     }
 
-    List<Vector3> GenerateTrajectory(int npoints, int distance, float maxtheta) {
+    
+
+    public List<Vector3> GenerateTrajectory(int npoints, int distance, float maxtheta) {
         // Generate random trajectory of npoints with the given distance. Each point is
         // At no more than +- maxtheta degrees from the precedent
         float margin = 4;
@@ -70,7 +68,7 @@ public class TerrainManager : MonoBehaviour {
         // pointA -> pointB and the given distance from pointB
         Transform lastPointTransform = GetTransformedDirection(pointA, pointB);
         Vector3 forward = new Vector3(0, 0, distance);
-        float rotation = SampleFromNormal(maxtheta);
+        float rotation = SampleFromNormal(maxtheta, maxtheta/6);
         Vector3 rotatedRelative = Quaternion.Euler(0, rotation, 0) * forward;
         Vector3 newPoint = lastPointTransform.TransformPoint(rotatedRelative);
         return newPoint;
@@ -116,6 +114,43 @@ public class TerrainManager : MonoBehaviour {
     void Update () {
 		
 	}
+
+    public void DrawLine(Vector3 a, Vector3 b, Color color){
+        var go = new GameObject();
+        var lr = go.AddComponent<LineRenderer>();
+        lr.SetPosition(0, a);
+        lr.SetPosition(1, b);
+        lr.SetColors(color, color);
+        // lr.SetWidth(0.1f, 0.1f);
+    }
+
+    public void DrawPath(List<Vector3> path, float checkpoint_threshold) {
+        for (int i = 0; i < path.Count; i++) {
+                GameObject check_flag = Instantiate(flag, path[i], Quaternion.identity);
+                DrawCircle(check_flag, checkpoint_threshold, 1);
+                if (i < path.Count -1) {
+                    DrawLine(path[i], path[i+1], Color.green);
+                    Debug.DrawLine(path[i], path[i+1], Color.red, 1000);
+                }
+            }
+    }
+
+    public void DrawCircle(GameObject gameObject, float radius, float lineWidth) {
+        var segments = 360;
+        var line = gameObject.AddComponent<LineRenderer>();
+        line.useWorldSpace = false;
+        line.startWidth = lineWidth;
+        line.endWidth = lineWidth;
+        line.positionCount = segments + 1;
+        var pointCount = segments + 1; // add extra point to make startpoint and endpoint the same to close the circle
+        var points = new Vector3[pointCount];
+        for (int i = 0; i < pointCount; i++)
+        {
+            var rad = Mathf.Deg2Rad * (i * 360f / segments);
+            points[i] = new Vector3(Mathf.Sin(rad) * radius, 0, Mathf.Cos(rad) * radius);
+        }
+        line.SetPositions(points);
+    }
 }
 
 
@@ -140,34 +175,6 @@ public class TerrainInfo
     //{
     //    return;
     //}
-
-    public void TerrainInfo2()
-    {
-        file_name = "terrain.json";
-        x_low = 50f;
-        x_high = 250f;
-        x_N = 45;
-        z_low = 50f;
-        z_high = 250f;
-        z_N = 7;
-        Debug.Log("Using hard coded info...");
-        //traversability = new float[,] { { 1.1f, 2f }, { 3.3f, 4.4f } };
-        traversability = new float[x_N, z_N]; // hardcoded now, needs to change
-        for(int i = 0; i < x_N; i++)
-        {
-            for (int j = 0; j < z_N; j++)
-            {
-                if ((i == 0 || i == x_N -1) || (j == 0 || j == z_N - 1))
-                {
-                    traversability[i, j] = 1.0f;
-                }
-                else
-                {
-                    traversability[i, j] = 0.0f;
-                }
-            }
-        }
-    }
 
     public int get_i_index(float x)
     {
