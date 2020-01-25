@@ -26,7 +26,17 @@ public class VisibilityGraph : MonoBehaviour {
                 float y = center.y;
                 float z = center.z + signs[i+1]*(z_step/2 + margin/Mathf.Sqrt(2));
                 Vector3 corner = new Vector3(x, y, z);
-                corners.Add(corner);
+                bool inside_rigidbody = false; 
+                foreach (GameObject obstacle_j in obstacles) {
+                    Collider collider = obstacle_j.GetComponent<Collider>();
+                    inside_rigidbody = (inside_rigidbody || collider.bounds.Contains(corner));
+                }
+                if (!inside_rigidbody) {
+                    corners.Add(corner);
+                }
+                else{
+                    Debug.Log("inside rigidbody");
+                }
             }
         }
         float[, ] adjancenies = get_adjacency_matrix(corners);

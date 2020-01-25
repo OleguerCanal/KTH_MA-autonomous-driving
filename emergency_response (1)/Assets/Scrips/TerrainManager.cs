@@ -39,8 +39,8 @@ public class TerrainManager : MonoBehaviour {
         //string myString = myInfo.SaveToString();
         //myInfo.WriteDataToFile(myString);
 
-        Instantiate(flag, myInfo.start_pos, Quaternion.identity);
-        Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
+        //Instantiate(flag, myInfo.start_pos, Quaternion.identity);
+        //Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
 
 
 
