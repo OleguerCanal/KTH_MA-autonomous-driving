@@ -40,10 +40,9 @@ public class TerrainManager : MonoBehaviour {
         //Instantiate(flag, myInfo.start_pos, Quaternion.identity);
         //Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
     }
+  
 
-    
-
-    public List<Vector3> GenerateTrajectory(int npoints, int distance, float maxtheta) {
+    public List<Vector3> GenerateRandomTrajectory(int npoints, int distance, float maxtheta) {
         // Generate random trajectory of npoints with the given distance. Each point is
         // At no more than +- maxtheta degrees from the precedent
         float margin = 4;
@@ -115,13 +114,14 @@ public class TerrainManager : MonoBehaviour {
 		
 	}
 
-    public void DrawLine(Vector3 a, Vector3 b, Color color){
+    public void DrawLine(Vector3 a, Vector3 b, Color color, float width = 0.1f){
         var go = new GameObject();
         var lr = go.AddComponent<LineRenderer>();
         lr.SetPosition(0, a);
         lr.SetPosition(1, b);
         lr.SetColors(color, color);
-        // lr.SetWidth(0.1f, 0.1f);
+        lr.SetWidth(width, width);
+        // lr.Set
     }
 
     public void DrawPath(List<Vector3> path, float checkpoint_threshold) {
