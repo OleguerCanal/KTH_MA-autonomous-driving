@@ -7,12 +7,15 @@ public class VisibilityGraph : MonoBehaviour {
 
     public float margin;
     public GameObject terrain_manager_game_object;
-    public List<Vector3> path_points;  // Access this to get the optimal path points
     
 	// Use this for initialization
 	void Start () {
-        List<Vector3> corners = new List<Vector3>();
+	}
+
+    public List<Vector3> GetPathPoints() {
         TerrainManager terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
+        List<Vector3> path_points = new List<Vector3>();
+        List<Vector3> corners = new List<Vector3>();
         corners.Add(terrain_manager.myInfo.start_pos);
         corners.Add(terrain_manager.myInfo.goal_pos);
 		GameObject[] obstacles = GameObject.FindGameObjectsWithTag("obstacle");
@@ -34,9 +37,6 @@ public class VisibilityGraph : MonoBehaviour {
                 if (!inside_rigidbody) {
                     corners.Add(corner);
                 }
-                // else{
-                //     Debug.Log("inside rigidbody");
-                // }
             }
         }
         float[, ] adjancenies = get_adjacency_matrix(corners);
@@ -44,35 +44,25 @@ public class VisibilityGraph : MonoBehaviour {
         path_points = new List<Vector3>();
         foreach (int path_index in path_indexes) {
             path_points.Add(corners[path_index]);
-            if (path_index > 0) {
-                //DrawLine(path_points[path_points.Count-1], path_points[path_points.Count - 2], Color.yellow);
-            }
         }
-	}
+        return path_points;
+    }
 	
 	// Update is called once per frame
 	void Update () {
 	}
 
-    private void DrawLine(Vector3 a, Vector3 b, Color color)
-    {
-        var go = new GameObject();
-        var lr = go.AddComponent<LineRenderer>();
-        lr.SetPosition(0, a);
-        lr.SetPosition(1, b);
-        lr.SetColors(color, color);
-        // lr.SetWidth(0.1f, 0.1f);
-    }
-
     float[, ] get_adjacency_matrix(List<Vector3> corners) {
         float[, ] adjancenies = new float[corners.Count, corners.Count];
         for (int i = 0; i < corners.Count; i++) {
+            int free_paths = 0;
             for (int j = i + 1; j < corners.Count; j++) {
                 if (Physics.Linecast(corners[i], corners[j])) {
                     adjancenies[i, j] = -1;
                     adjancenies[j, i] = -1;
                     continue;
-                }                
+                }
+                free_paths ++;
                 float dist = Vector3.Distance(corners[i], corners[j]);
                 adjancenies[i, j] = dist;
                 adjancenies[j, i] = dist;
@@ -80,5 +70,5 @@ public class VisibilityGraph : MonoBehaviour {
             }
         }
         return adjancenies;
-}
+    }
 }

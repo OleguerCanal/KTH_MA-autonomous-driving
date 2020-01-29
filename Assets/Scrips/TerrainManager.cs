@@ -2,112 +2,213 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json; // Import JSON.NET from Unity Asset store
+using System.Linq;
 
 
 public class TerrainManager : MonoBehaviour {
-
-
-    //public TestScriptNoObject testNoObject = new TestScriptNoObject();
-
-    public string terrain_filename = "Text/terrainC";
+    public string terrain_filename = "Text/terrainTrain";
     public TerrainInfo myInfo;
 
     public GameObject flag;
 
+    TextAsset jsonTextFile;
+
+    Cell start;
+    Cell goal;
     // Use this for initialization
     void Start()
     {
 
     }
 
-    // Use this for initialization
+    // Use this for initialization from predefined map
     void Awake()
     {
 
-        var jsonTextFile = Resources.Load<TextAsset>(terrain_filename);
+    }
 
+    public void LoadMap(string file_name, bool use_start_goal_info) {
+        ResetMap();
+        jsonTextFile = Resources.Load<TextAsset>(file_name);
         myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text);
 
-        myInfo.CreateCubes();
-
-        // this code is used to create new terrains and obstacles
-        //myInfo.TerrainInfo2();
-        //myInfo.file_name = "test88";
-        //string myString = myInfo.SaveToString();
-        //myInfo.WriteDataToFile(myString);
-
-        // Uncomment this to display start and goal flags
-        //Instantiate(flag, myInfo.start_pos, Quaternion.identity);
-        //Instantiate(flag, myInfo.goal_pos, Quaternion.identity);
-    }
-  
-
-    public List<Vector3> GenerateRandomTrajectory(int npoints, int distance, float maxtheta) {
-        // Generate random trajectory of npoints with the given distance. Each point is
-        // At no more than +- maxtheta degrees from the precedent
-        float margin = 4;
-        float y = myInfo.start_pos.y;
-        List<Vector3> points = new List<Vector3>();
-        points.Add(myInfo.start_pos);
-        Vector3 secondPoint = new Vector3(221, y, 230);
-        points.Add(secondPoint);
-        for (int i = 1; i < npoints; i++) {
-            Vector3 nextPoint;
-            do {
-                nextPoint = GenerateNewPoint(points[i - 1], points[i], distance, maxtheta);
-            } while (!InsideMap(nextPoint, margin));
-            points.Add(nextPoint);
-        }
-        return points;
-    }
-
-    Vector3 GenerateNewPoint(Vector3 pointA, Vector3 pointB, float distance, float maxtheta) {
-        // pointB and pointA are respectively the last and last - 1 points
-        // Generate the next point with the given maximum angle from the direction
-        // pointA -> pointB and the given distance from pointB
-        Transform lastPointTransform = GetTransformedDirection(pointA, pointB);
-        Vector3 forward = new Vector3(0, 0, distance);
-        float rotation = SampleFromNormal(maxtheta, maxtheta/6);
-        Vector3 rotatedRelative = Quaternion.Euler(0, rotation, 0) * forward;
-        Vector3 newPoint = lastPointTransform.TransformPoint(rotatedRelative);
-        return newPoint;
-    }
-
-    Transform GetTransformedDirection(Vector3 pointA, Vector3 pointB) {
-        // Returns a Transform with position = pointB, orientated
-        // in the direction pointA -> pointB
-        Vector3 direction = (pointB - pointA).normalized;
-        GameObject empty = new GameObject();
-        Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
-        empty.transform.position = pointB;
-        empty.transform.rotation = rotation;
-        return empty.transform;
-    }
-
-    float SampleFromNormal(float maxtheta, float stdev) {
-        // Sample from normal distribution with zero mean and given stdev
-        int n = Mathf.CeilToInt(3 * Mathf.Pow(stdev, 2) / Mathf.Pow(maxtheta, 2));
-        float tot = 0;
-        for (int i = 0; i < n; i++) {
-            tot += Random.Range(-maxtheta, +maxtheta);
-        }
-        return tot / n;
-    }
-
-    bool InsideMap(Vector3 point, float margin) {
         float x_step = (myInfo.x_high - myInfo.x_low) / myInfo.x_N;
-        float z_step = (myInfo.z_high - myInfo.z_low) / myInfo.z_N;
-
-        if (point.x < myInfo.x_low + x_step + margin || point.x > myInfo.x_high - x_step - margin) {
-            return false;
+        float z_step = (myInfo.z_high - myInfo.z_low) / myInfo.z_N; 
+        int rows = myInfo.traversability.GetLength(0);
+        int cols = myInfo.traversability.GetLength(1);
+        if (use_start_goal_info) {
+            int start_row = Mathf.FloorToInt((myInfo.start_pos.x - myInfo.x_low) / x_step);
+            int start_col = Mathf.FloorToInt((myInfo.start_pos.z - myInfo.z_low) / z_step);
+            int goal_row = Mathf.FloorToInt((myInfo.goal_pos.x - myInfo.x_low) / x_step);
+            int goal_col = Mathf.FloorToInt((myInfo.goal_pos.z - myInfo.z_low) / z_step);
+            start = new Cell(start_row, start_col);
+            goal = new Cell(goal_row, goal_col);
+        } else {
+            start = new Cell(1, 1);
+            goal = new Cell(rows - 2, cols - 2);
+            myInfo.start_pos.x = myInfo.x_low + start.row * x_step + x_step * 0.5f;
+            myInfo.start_pos.z = myInfo.z_low + start.col * z_step +z_step * 0.5f;
+            myInfo.goal_pos.x = myInfo.x_low + goal.row * x_step + x_step * 0.5f;
+            myInfo.goal_pos.z = myInfo.z_low + goal.col * z_step + z_step * 0.5f;  
         }
-        if (point.z < myInfo.z_low + z_step + margin || point.z > myInfo.z_high - z_step - margin) {
-            return false;
-        }
-        return true;
+        myInfo.CreateCubes();
     }
 
+    public void SelectMapRandom(float difficulty) {
+        int map_idx = RandomInteger(1,5);
+        ResetMap();
+        LoadTrainMap(map_idx);
+        AddRandomBlocks(difficulty);
+    }
 
+    private void LoadTrainMap(int map_idx) {
+        // Same as load map, but sets start and pos at two extremes
+        string file_name = "Text/terrainTrain"+map_idx;
+        jsonTextFile = Resources.Load<TextAsset>(file_name);
+        myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text);
+
+        float x_step = (myInfo.x_high - myInfo.x_low) / myInfo.x_N;
+        float z_step = (myInfo.z_high - myInfo.z_low) / myInfo.z_N; 
+        int rows = myInfo.traversability.GetLength(0);
+        int cols = myInfo.traversability.GetLength(1);
+        Cell[] corners = new Cell[] {new Cell(1,1), new Cell(1,cols-2), new Cell(rows-2,1), new Cell(rows-2,cols-2)};
+        int start_idx, goal_idx;
+        do {
+            start_idx = RandomInteger(0,corners.Length - 1);
+            goal_idx = RandomInteger(0,corners.Length - 1);
+        } while (start_idx == goal_idx);
+        start = corners[start_idx];
+        goal = corners[goal_idx];
+        myInfo.start_pos.x = myInfo.x_low + start.row * x_step + x_step * 0.5f;
+        myInfo.start_pos.z = myInfo.z_low + start.col * z_step +z_step * 0.5f;
+        myInfo.goal_pos.x = myInfo.x_low + goal.row * x_step + x_step * 0.5f;
+        myInfo.goal_pos.z = myInfo.z_low + goal.col * z_step + z_step * 0.5f;  
+        myInfo.CreateCubes();
+    }
+
+    public void AddRandomBlocks(float difficulty) {
+        float[,] traversability;
+        int iteration = 0;
+        do {
+            traversability = GenerateTraversability(difficulty, start, goal);
+            if (iteration++ > 0 && iteration % 3000 == 0) {
+                difficulty -= 0.01f;
+            }
+        } while (! IsTraversable(traversability, start, goal));
+        //Debug.Log("Difficulty: "+difficulty);
+        myInfo.traversability = traversability;
+        myInfo.CreateCubes();
+    }
+
+    public void ResetMap() {
+        GameObject[] obstacles = GameObject.FindGameObjectsWithTag("obstacle");
+        for (int i = 0; i < obstacles.Length; i++) { // Destroying cubes from previous episode
+            GameObject.DestroyImmediate(obstacles[i]);
+        }
+
+        GameObject[] flags = GameObject.FindGameObjectsWithTag("flag");
+        for (int i = 0; i < flags.Length; i++) { // Destroying cubes from previous episode
+            GameObject.DestroyImmediate(flags[i]);
+        }
+        GameObject[] lines = GameObject.FindGameObjectsWithTag("line");
+        for (int i = 0; i < lines.Length; i++) { // Destroying cubes from previous episode
+            GameObject.DestroyImmediate(lines[i]);
+        }
+        GameObject[] line_renderers = GameObject.FindGameObjectsWithTag("line_renderer");
+        for (int i = 0; i < line_renderers.Length; i++) { // Destroying cubes from previous episode
+            GameObject.DestroyImmediate(line_renderers[i]);
+        }
+    }
+
+    private float[,] GenerateTraversability(float difficulty, Cell start, Cell goal) {
+        //Difficulty: proportion of map covered by blocks [0, 1]
+        
+        // IMPORTANT: rows are X axis, cols are Z axis
+        int rows = myInfo.traversability.GetLength(0);
+        int cols = myInfo.traversability.GetLength(1);
+        float[,] traversability = myInfo.traversability.Clone() as float[,];
+        int nblocks = Mathf.FloorToInt(difficulty * (rows - 1) * (cols - 1)) - CountObstacles(traversability);
+
+        int placed_blocks = 0;
+        while(placed_blocks < nblocks) {
+            int row = Mathf.RoundToInt(Random.Range(1, rows - 1));
+            int col = Mathf.RoundToInt(Random.Range(1, cols - 1));
+            if ((row == start.row && col == start.col) || //Don't place over start
+                (row == goal.row && col == goal.col) || // Don't place over goal
+                traversability[row, col] == 1.0f) // Don't place where already placed
+            {
+                continue;
+            }
+            traversability[row, col] = 1.0f;
+            placed_blocks ++;
+        }
+        return traversability;
+    }
+
+    private int CountObstacles(float[,] traversability) {
+        // Counts the number of occupied blocks (border walls excluded)
+        int rows = traversability.GetLength(0);
+        int cols = traversability.GetLength(1);
+        int tot = 0;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (traversability[r,c] == 1.0f) {
+                    tot++;
+                }    
+            }
+        }
+        tot -= 2 * (rows + cols); // Don't count borders 
+        return tot;
+    }
+
+    private bool IsTraversable(float[,] traversability, Cell start, Cell goal) {
+        int rows = traversability.GetLength(0);
+        int cols = traversability.GetLength(1);
+        bool[,] visited = new bool[rows, cols];
+        Queue<Cell> queue = new Queue<Cell>();
+        queue.Enqueue(start);
+        while(queue.Count > 0) {
+            Cell cell = queue.Dequeue();
+            if (cell.Equals(goal)) {
+                return true;
+            }
+            Cell[] neighbors = new Cell[]{
+                new Cell(cell.row-1, cell.col), new Cell(cell.row+1, cell.col),
+                new Cell(cell.row, cell.col-1), new Cell(cell.row, cell.col+1)};
+            foreach (Cell c in neighbors) {
+                if (! (c.row < 0 || c.row >= rows || c.col < 0 || c.col >= cols)) {
+                    if (!visited[c.row, c.col] && traversability[c.row, c.col] == 0) {
+                        queue.Enqueue(c);
+                        visited[c.row, c.col] = true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private class Cell{
+        public int row, col;
+        public Cell(int row, int col) {
+            this.row = row;
+            this.col = col;
+        }
+        public bool Equals(Cell that) {
+            if (this.row == that.row && this.col == that.col) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    
+    private int RandomInteger(int low, int high) {
+        int r = Mathf.FloorToInt(Random.Range(low, high+1));
+        if (r == high+1) {
+            r = high;
+        }
+        return r;
+    }
 
     // Update is called once per frame
     void Update () {
@@ -116,7 +217,9 @@ public class TerrainManager : MonoBehaviour {
 
     public void DrawLine(Vector3 a, Vector3 b, Color color, float width = 0.1f){
         var go = new GameObject();
+        go.tag = "line";
         var lr = go.AddComponent<LineRenderer>();
+        lr.tag = "line";
         lr.SetPosition(0, a);
         lr.SetPosition(1, b);
         lr.SetColors(color, color);
@@ -130,13 +233,12 @@ public class TerrainManager : MonoBehaviour {
                 DrawCircle(check_flag, checkpoint_threshold, 1);
                 if (i < path.Count -1) {
                     DrawLine(path[i], path[i+1], Color.green);
-                    Debug.DrawLine(path[i], path[i+1], Color.red, 1000);
                 }
             }
     }
 
     public void DrawCircle(GameObject gameObject, float radius, float lineWidth) {
-        var segments = 360;
+        var segments = 180;
         var line = gameObject.AddComponent<LineRenderer>();
         line.useWorldSpace = false;
         line.startWidth = lineWidth;
@@ -150,6 +252,7 @@ public class TerrainManager : MonoBehaviour {
             points[i] = new Vector3(Mathf.Sin(rad) * radius, 0, Mathf.Cos(rad) * radius);
         }
         line.SetPositions(points);
+        line.tag = "line_renderer";
     }
 }
 
@@ -169,12 +272,6 @@ public class TerrainInfo
 
     public Vector3 start_pos;
     public Vector3 goal_pos;
-
-
-    //public TerrainInfo()
-    //{
-    //    return;
-    //}
 
     public int get_i_index(float x)
     {
@@ -217,8 +314,8 @@ public class TerrainInfo
 
     public void CreateCubes()
     {
-        float x_step = (x_high - x_low) / x_N;
-        float z_step = (z_high - z_low) / z_N;
+        float x_step = (x_high - x_low) / traversability.GetLength(0);
+        float z_step = (z_high - z_low) / traversability.GetLength(1);
         for (int i = 0; i < x_N; i++)
         {
             for (int j = 0; j < z_N; j++)
@@ -230,7 +327,6 @@ public class TerrainInfo
                     cube.transform.position = new Vector3(get_x_pos(i), 0.0f, get_z_pos(j));
                     cube.transform.localScale = new Vector3(x_step, 15.0f, z_step);
                 }
-
             }
         }
     }

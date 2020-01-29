@@ -22,6 +22,7 @@ public class Dijkstra {
         }
         dist[0] = 0;
         while (Q.Count > 0) {
+            // Get the closest
             float min_dist = Mathf.Infinity;
             int u = 0;
             foreach (int i in Q) {
@@ -32,6 +33,9 @@ public class Dijkstra {
             }
             Q.Remove(u);
             for (int v = 0; v < n; v++) {
+                if (v == u) {
+                    continue;
+                }
                 if (adjancenies[u, v] > 0) { // If neighbours
                     float alt = dist[u] + adjancenies[u, v];
                     if (alt < dist[v]) {
@@ -46,6 +50,10 @@ public class Dijkstra {
         List<int> shortest_path = new List<int>();
         int point = 1;
         while (point != 0) {
+            if (point == -1 || point > prev.Length - 1) {
+                throw new System.Exception();
+                //UnityEditor.EditorApplication.isPlaying = false;
+            }
             shortest_path.Insert(0, point);
             point = prev[point];
         }
