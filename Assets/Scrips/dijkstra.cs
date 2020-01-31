@@ -11,6 +11,7 @@ public class Dijkstra {
         // others are corners
         // https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
         int n = adjancenies.GetLength(0);
+        // Debug.LogWarning(n);
         float[] dist = new float[n];
         int[] prev = new int[n];
 
@@ -55,6 +56,7 @@ public class Dijkstra {
                 //UnityEditor.EditorApplication.isPlaying = false;
             }
             shortest_path.Insert(0, point);
+            // Debug.LogWarning("Point: " + point.ToString());
             point = prev[point];
         }
         shortest_path.Insert(0, 0);  // Add origin

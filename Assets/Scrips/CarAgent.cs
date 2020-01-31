@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MLAgents;
+using Barracuda;
 using System.Linq;
 
 namespace UnityStandardAssets.Vehicles.Car
@@ -13,9 +14,9 @@ namespace UnityStandardAssets.Vehicles.Car
         public bool render_objects = false;
         public bool log = true;
         // Gameobjects
-        private CarController m_Car; // the car controller we want to use
         public GameObject terrain_manager_game_object;
         public GameObject flag;
+        public GameObject academy_gameobject;
         public float time_limit = 40;
         public int episodes_per_map = 3;
         public float checkpoint_threshold = 4; // Checkpoint area radius
@@ -25,63 +26,77 @@ namespace UnityStandardAssets.Vehicles.Car
         public float lidar_range = 40;
         public float[] lidar_rays = {-45f, -22.5f, 0f, 22.5f, 45f}; // Angles of lidar rays wrp to forward direction
 
+        private CurriculumManager curriculum_manager;
+        private CarController m_Car; // the car controller we want to use
+
         // Classes
         private TerrainManager terrain_manager;
         private Rigidbody rBody;
         private float timer;
-
-        // Path variables
-        private List<Vector3> augmentedPath;
+        private List<Vector3> augmentedPath = new List<Vector3>();
         private int next_checkpoint_idx = 1;
-
         private float[] accelerations = new float[] {-1, 0, 1};
         private float[] steerings = new float[] {-1, -0.8f, -0.6f, -0.4f, -0.2f, 0, 0.2f, 0.4f, 0.6f, 0.8f, 1};
-        private float cum_reward = 0;
+        
+        // Learning curve control
+        private float checkpoints_reached = 0;
         private float map_diagonal = 0;
         private int episode = 0;
-        
+        private float cum_reward = 0;
+
         void Start () {
-            m_Car = GetComponent<CarController>();
-            rBody = GetComponent<Rigidbody>();
-            terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
-            timer = Time.time;
             Time.timeScale = time_scale;
             Time.fixedDeltaTime = 0.02f;
 
-            // For state normalization
+            m_Car = GetComponent<CarController>();
+            rBody = GetComponent<Rigidbody>();
+            curriculum_manager = academy_gameobject.GetComponent<CurriculumManager>();
+            terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
+            timer = Time.time;
+            terrain_manager.LoadMap("Text/terrainTrain3", false);
+            VisibilityGraph visibilityGraph = terrain_manager.GetComponent<VisibilityGraph>();
+            augmentedPath = GetAugmentedPath(visibilityGraph.GetPathPoints());
             float width = terrain_manager.myInfo.x_high - terrain_manager.myInfo.x_low;
             float height = terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low;
             map_diagonal = Mathf.Sqrt(Mathf.Pow(width, 2) + Mathf.Pow(height, 2));
+
         }
 
         public override void AgentReset(){
-            if (episode++ % 3 == 0) {
-                bool retry = true;
-                do {
-                    try {
-                        terrain_manager.SelectMapRandom(0.5f);
-                        VisibilityGraph visibilityGraph = terrain_manager.GetComponent<VisibilityGraph>();
-                        augmentedPath =  GetAugmentedPath(visibilityGraph.GetPathPoints());
-                        retry = false;
-                    } catch (System.Exception e) {
-                        if (log) {
-                            Debug.Log("Impossible to generate path, retry");
-                        }
-                    }
-                } while(retry);
-            }
+            //float success = augmentedPath.Count > 0 ? checkpoints_reached / augmentedPath.Count : 0;
+            //if (episode++ % episodes_per_map == 0 || success > curriculum_manager.prop_to_pass) {
+            //    bool retry = true;
+            //    do {
+            //        try {
+            //            float map_difficulty = curriculum_manager.get_difficulty(success) + 0.1f;
+            //            //Debug.Log("difficulty: "+map_difficulty);
+            //            terrain_manager.SelectMapRandom(map_difficulty);
+            //            //terrain_manager.LoadMap("Text/terrainTrain3", false);
+            //            // For state normalization
+            //            float width = terrain_manager.myInfo.x_high - terrain_manager.myInfo.x_low;
+            //            float height = terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low;
+            //            map_diagonal = Mathf.Sqrt(Mathf.Pow(width, 2) + Mathf.Pow(height, 2));
+            //            VisibilityGraph visibilityGraph = terrain_manager.GetComponent<VisibilityGraph>();
+            //            augmentedPath = GetAugmentedPath(visibilityGraph.GetPathPoints());
+            //            retry = false;
+            //        } catch(System.Exception e) {
+            //            Debug.Log("Impossible to generate path, retry");
+            //        }
+            //    } while(retry);
+            //}
+            checkpoints_reached = 0;
             this.rBody.velocity = Vector3.zero;
             this.transform.position = terrain_manager.myInfo.start_pos;
             this.transform.rotation = Quaternion.LookRotation(augmentedPath[1] - augmentedPath[0]);  // TODO: Should we fix rotation to 0? Could be pointing wrong direction... should it be random?
             next_checkpoint_idx = 1;
             timer = Time.time;
-            cum_reward = 0;
             if (render_objects) {
                 terrain_manager.DrawPath(augmentedPath, checkpoint_threshold);
             }
+            cum_reward = 0;
         }
 
-        private List<Vector3> GetAugmentedPath(List<Vector3> path_points) {
+        private List<Vector3> GetAugmentedPath(List<Vector3> path_points) {  // TODO (This shouldnt be here! In terrain manager or visibuity graph)
             List<Vector3> augmentedPath = new List<Vector3>();
             for (int i = 0; i < path_points.Count - 1; i++) {
                 Vector3 start = path_points[i];
@@ -97,6 +112,8 @@ namespace UnityStandardAssets.Vehicles.Car
             augmentedPath.Add(path_points.Last());
             return augmentedPath;
         }
+
+
 
         public override void CollectObservations()
         {
@@ -120,14 +137,14 @@ namespace UnityStandardAssets.Vehicles.Car
             foreach (float angle in lidar_rays) {
                 // float angle_rad = 0f; // Uncomment this (use to debug lidar distance)
                 float angle_rad = Mathf.PI*angle/180f;
-                Vector3 ray_dir = transform.TransformDirection(new Vector3(lidar_range*Mathf.Sin(angle_rad), 0, lidar_range*Mathf.Cos(angle_rad)));
+                Vector3 ray_dir = transform.TransformDirection(new Vector3(Mathf.Sin(angle_rad), 0, Mathf.Cos(angle_rad)));
                 RaycastHit hit;
                 Ray ray = new Ray(transform.position, ray_dir);
                 Physics.Raycast(ray, out hit);
                 float distance = (Mathf.Clamp(hit.distance - 2f, 0, lidar_range)) / map_diagonal;
                 AddVectorObs(distance);
                 if (render_debug) {
-                    Debug.DrawLine(transform.position, transform.position + hit.distance * ray_dir.normalized, Color.red, 0.1f);
+                    Debug.DrawLine(transform.position, transform.position + Mathf.Clamp(hit.distance - 2f, 0, lidar_range) * ray_dir.normalized, Color.red, 0.1f);
                 }
             }
         }
@@ -139,17 +156,19 @@ namespace UnityStandardAssets.Vehicles.Car
             for (int i = 0; i < n; i++) {
                 Vector3 checkpoint = augmentedPath[next_checkpoint_idx + i];
                 if (Vector3.Distance(transform.position, checkpoint) < checkpoint_threshold) {  // If checkpoint activted
+                    checkpoints_reached = checkpoints_reached + i + 1;
+                    if (log){
+                        Debug.Log("checkpoints_reached: " + checkpoints_reached.ToString());
+                    }
                     if (checkpoint == augmentedPath.Last()) {  // If last checkpoint ( == checks equality with precision 1e-5)
-                        reward += checkpoints_window*0.5f + 0.5f; // Give all the remaining rewards
+                        reward += checkpoints_window * 0.5f + 0.5f; // Give all the remaining rewards
                         Done();
-                        if (log) {
-                            Debug.Log("Finish!!");
-                        }
+                        Debug.Log("Finish!!");
                         break;
                     } else {
                         reward += (i+1)*0.5f;
                         next_checkpoint_idx = next_checkpoint_idx + i + 1;
-                        if (log){
+                        if (log) {
                             Debug.Log("Taken checkpoint "+(next_checkpoint_idx - 1));
                         }
                         break;
@@ -157,11 +176,12 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
             }
             AddReward(reward);
+            cum_reward += reward;
 
-            // Elements of vectorAction[] start from 1
             int steer = (int) vectorAction[0];
             int acc = (int) vectorAction[1];
             m_Car.Move(steerings[steer], accelerations[acc], accelerations[acc], 0.0f);
+            //m_Car.Move(vectorAction[0], vectorAction[1], vectorAction[1], 0.0f);
             if (Time.time - timer > time_limit) {
                 Done();
             }
