@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json; // Import JSON.NET from Unity Asset store
@@ -6,31 +6,125 @@ using System.Linq;
 
 
 public class TerrainManager : MonoBehaviour {
-    public string terrain_filename = "Text/terrainTrain";
     public TerrainInfo myInfo;
 
     public GameObject flag;
 
     TextAsset jsonTextFile;
+    public GameObject terrain;
 
+    private string train_maps_prefix = "Text/terrainTrain";
     Cell start;
     Cell goal;
-    // Use this for initialization
-    void Start()
-    {
 
+    float height;
+    int[] maps = new int[] {1,2,3,4,5,6,7,8,10,11,12,13};
+    float[] map_difficulties;
+
+    void Start(){
+        height = terrain.transform.position.y;
+        map_difficulties = new float[maps.Length];
+        // Scan all maps and assign them their difficulty
+        for (int map_idx = 0; map_idx < maps.Length; map_idx++) {
+            // Load map information from json
+            jsonTextFile = Resources.Load<TextAsset>(train_maps_prefix+maps[map_idx]);
+            TerrainInfo mapInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text, height);
+            // Compute map difficulty
+            int occupied = CountObstacles(mapInfo.traversability);
+            int tot = (mapInfo.traversability.GetLength(0) - 1) * (mapInfo.traversability.GetLength(1) - 1);
+            float map_difficulty = (float) occupied / (float) tot;
+            map_difficulties[map_idx] = map_difficulty;
+        }
+    }
+    void Awake(){}
+  
+    public void SelectMapRandom(float difficulty) {
+        int map_idx = GetMapIdxForDifficulty(difficulty);
+        ResetMap();
+        LoadTrainMap(maps[map_idx]);
+        // Adding blocks to reach the given difficulty
+        AddRandomBlocks(difficulty);
     }
 
-    // Use this for initialization from predefined map
-    void Awake()
-    {
+    private int GetMapIdxForDifficulty(float max_difficulty) {
+        // Returns a random index of a map with difficulty < max_difficulty
+        List<int> map_indices = new List<int>();
+        for (int map_idx = 0; map_idx < maps.Length; map_idx++) {
+            if (map_difficulties[map_idx] <= max_difficulty) {
+                map_indices.Add(map_idx);
+            }
+        }
+        return RandomChoice(map_indices);
+    }
 
+    private int RandomChoice(List<int> values) {
+        int idx = RandomInteger(0, values.Count - 1);
+        return values[idx];
+    }
+
+    public void ResetMap() {
+        float height = terrain.transform.position.y;
+        GameObject[] obstacles = GameObject.FindGameObjectsWithTag("obstacle");
+        for (int i = 0; i < obstacles.Length; i++) { // Destroying cubes from previous episode
+            if (Mathf.Abs(obstacles[i].transform.position.y - height) < 10) {
+                GameObject.DestroyImmediate(obstacles[i]);
+            }
+        }
+        GameObject[] flags = GameObject.FindGameObjectsWithTag("flag");
+        for (int i = 0; i < flags.Length; i++) { // Destroying flags from previous episode
+            if (Mathf.Abs(flags[i].transform.position.y - height) < 10) {
+                GameObject.DestroyImmediate(flags[i]);
+            }
+        }
+        GameObject[] lines = GameObject.FindGameObjectsWithTag("line");
+        for (int i = 0; i < lines.Length; i++) { // Destroying lines from previous episode
+            if (Mathf.Abs(lines[i].transform.position.y - height) < 10) {
+                GameObject.DestroyImmediate(lines[i]);
+            }
+        }
+        GameObject[] line_renderers = GameObject.FindGameObjectsWithTag("line_renderer");
+        for (int i = 0; i < line_renderers.Length; i++) { // Destroying line_renderers from previous episode
+            if (Mathf.Abs(line_renderers[i].transform.position.y - height) < 10) {
+                GameObject.DestroyImmediate(line_renderers[i]);
+            }
+        }
+    }
+
+    public void LoadTrainMap(int map_idx) {
+        string file_name = "Text/terrainTrain"+map_idx;
+        jsonTextFile = Resources.Load<TextAsset>(file_name);
+        
+        float height = terrain.transform.position.y;
+        myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text, height);
+        float x_step = (myInfo.x_high - myInfo.x_low) / myInfo.x_N;
+        float z_step = (myInfo.z_high - myInfo.z_low) / myInfo.z_N; 
+        int rows = myInfo.traversability.GetLength(0);
+        int cols = myInfo.traversability.GetLength(1);
+        
+        Cell[] corners = new Cell[] {new Cell(1,1), new Cell(1,cols-2), new Cell(rows-2,1), new Cell(rows-2,cols-2)};
+        int start_idx, goal_idx;
+        do {
+            start_idx = RandomInteger(0,corners.Length - 1);
+            goal_idx = RandomInteger(0,corners.Length - 1);
+        } while (start_idx == goal_idx);
+        start = corners[start_idx];
+        goal = corners[goal_idx];
+        
+        myInfo.start_pos.x = myInfo.x_low + start.row * x_step + x_step * 0.5f;
+        myInfo.start_pos.y = height;
+        myInfo.start_pos.z = myInfo.z_low + start.col * z_step +z_step * 0.5f;
+        
+        myInfo.goal_pos.x = myInfo.x_low + goal.row * x_step + x_step * 0.5f;
+        myInfo.goal_pos.y = height;
+        myInfo.goal_pos.z = myInfo.z_low + goal.col * z_step + z_step * 0.5f;  
+        myInfo.CreateCubes();
     }
 
     public void LoadMap(string file_name, bool use_start_goal_info) {
         ResetMap();
         jsonTextFile = Resources.Load<TextAsset>(file_name);
-        myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text);
+        float height = terrain.transform.position.y;
+        myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text, height);
 
         float x_step = (myInfo.x_high - myInfo.x_low) / myInfo.x_N;
         float z_step = (myInfo.z_high - myInfo.z_low) / myInfo.z_N; 
@@ -47,102 +141,65 @@ public class TerrainManager : MonoBehaviour {
             start = new Cell(1, 1);
             goal = new Cell(rows - 2, cols - 2);
             myInfo.start_pos.x = myInfo.x_low + start.row * x_step + x_step * 0.5f;
+            myInfo.start_pos.y = height;
             myInfo.start_pos.z = myInfo.z_low + start.col * z_step +z_step * 0.5f;
             myInfo.goal_pos.x = myInfo.x_low + goal.row * x_step + x_step * 0.5f;
+            myInfo.goal_pos.y = height;
             myInfo.goal_pos.z = myInfo.z_low + goal.col * z_step + z_step * 0.5f;  
         }
         myInfo.CreateCubes();
     }
 
-    public void SelectMapRandom(float difficulty) {
-        int map_idx = RandomInteger(1,5);
-        ResetMap();
-        LoadTrainMap(map_idx);
-        AddRandomBlocks(difficulty);
-    }
-
-    private void LoadTrainMap(int map_idx) {
-        // Same as load map, but sets start and pos at two extremes
-        string file_name = "Text/terrainTrain"+map_idx;
-        jsonTextFile = Resources.Load<TextAsset>(file_name);
-        myInfo = TerrainInfo.CreateFromJSON(jsonTextFile.text);
-
-        float x_step = (myInfo.x_high - myInfo.x_low) / myInfo.x_N;
-        float z_step = (myInfo.z_high - myInfo.z_low) / myInfo.z_N; 
-        int rows = myInfo.traversability.GetLength(0);
-        int cols = myInfo.traversability.GetLength(1);
-        Cell[] corners = new Cell[] {new Cell(1,1), new Cell(1,cols-2), new Cell(rows-2,1), new Cell(rows-2,cols-2)};
-        int start_idx, goal_idx;
-        do {
-            start_idx = RandomInteger(0,corners.Length - 1);
-            goal_idx = RandomInteger(0,corners.Length - 1);
-        } while (start_idx == goal_idx);
-        start = corners[start_idx];
-        goal = corners[goal_idx];
-        myInfo.start_pos.x = myInfo.x_low + start.row * x_step + x_step * 0.5f;
-        myInfo.start_pos.z = myInfo.z_low + start.col * z_step +z_step * 0.5f;
-        myInfo.goal_pos.x = myInfo.x_low + goal.row * x_step + x_step * 0.5f;
-        myInfo.goal_pos.z = myInfo.z_low + goal.col * z_step + z_step * 0.5f;  
-        myInfo.CreateCubes();
-    }
-
-    public void AddRandomBlocks(float difficulty) {
-        float[,] traversability;
-        int iteration = 0;
-        do {
-            traversability = GenerateTraversability(difficulty, start, goal);
-            if (iteration++ > 0 && iteration % 3000 == 0) {
-                difficulty -= 0.01f;
-            }
-        } while (! IsTraversable(traversability, start, goal));
-        //Debug.Log("Difficulty: "+difficulty);
+    private void AddRandomBlocks(float difficulty) {
+        float[,] traversability = GenerateTraversability(difficulty, start, goal);
         myInfo.traversability = traversability;
         myInfo.CreateCubes();
     }
 
-    public void ResetMap() {
-        GameObject[] obstacles = GameObject.FindGameObjectsWithTag("obstacle");
-        for (int i = 0; i < obstacles.Length; i++) { // Destroying cubes from previous episode
-            GameObject.DestroyImmediate(obstacles[i]);
-        }
-
-        GameObject[] flags = GameObject.FindGameObjectsWithTag("flag");
-        for (int i = 0; i < flags.Length; i++) { // Destroying cubes from previous episode
-            GameObject.DestroyImmediate(flags[i]);
-        }
-        GameObject[] lines = GameObject.FindGameObjectsWithTag("line");
-        for (int i = 0; i < lines.Length; i++) { // Destroying cubes from previous episode
-            GameObject.DestroyImmediate(lines[i]);
-        }
-        GameObject[] line_renderers = GameObject.FindGameObjectsWithTag("line_renderer");
-        for (int i = 0; i < line_renderers.Length; i++) { // Destroying cubes from previous episode
-            GameObject.DestroyImmediate(line_renderers[i]);
-        }
-    }
-
     private float[,] GenerateTraversability(float difficulty, Cell start, Cell goal) {
         //Difficulty: proportion of map covered by blocks [0, 1]
-        
+        int blocks_per_iteration = 5;
         // IMPORTANT: rows are X axis, cols are Z axis
         int rows = myInfo.traversability.GetLength(0);
         int cols = myInfo.traversability.GetLength(1);
         float[,] traversability = myInfo.traversability.Clone() as float[,];
         int nblocks = Mathf.FloorToInt(difficulty * (rows - 1) * (cols - 1)) - CountObstacles(traversability);
-
         int placed_blocks = 0;
+        int iteration = 0;
         while(placed_blocks < nblocks) {
-            int row = Mathf.RoundToInt(Random.Range(1, rows - 1));
-            int col = Mathf.RoundToInt(Random.Range(1, cols - 1));
-            if ((row == start.row && col == start.col) || //Don't place over start
-                (row == goal.row && col == goal.col) || // Don't place over goal
-                traversability[row, col] == 1.0f) // Don't place where already placed
-            {
-                continue;
+            List<Cell> placed = new List<Cell>();
+            List<Cell> empty_cells = EmptyCells(traversability, start, goal);
+            for (int i = 0; i < blocks_per_iteration && placed_blocks < nblocks; i++) {
+                int cell_idx = RandomInteger(0, empty_cells.Count - 1);
+                Cell c = empty_cells[cell_idx];
+                traversability[c.row, c.col] = 1.0f;
+                placed.Add(new Cell(c.row, c.col));
+                empty_cells.RemoveAt(cell_idx);
             }
-            traversability[row, col] = 1.0f;
-            placed_blocks ++;
+            if (IsTraversable(traversability, start, goal)) {
+                placed_blocks += placed.Count();
+            } else {
+                foreach (Cell c in placed) {
+                    traversability[c.row, c.col] = 0.0f;
+                }
+            }
+            if (iteration++ > nblocks * 10) {
+                nblocks -= 2;
+            }
         }
         return traversability;
+    }
+
+    List<Cell> EmptyCells(float[, ] traversability, Cell start, Cell goal) {
+        List<Cell> empty = new List<Cell>();
+        for (int r = 0; r < traversability.GetLength(0); r++) {
+            for (int c = 0; c < traversability.GetLength(1); c++) {
+                if (traversability[r, c] == 0.0f && r!= start.row && c != start.col && r != goal.row && c != goal.col) {
+                    empty.Add(new Cell(r, c));
+                }
+            }
+        }
+        return empty;
     }
 
     private int CountObstacles(float[,] traversability) {
@@ -158,6 +215,7 @@ public class TerrainManager : MonoBehaviour {
             }
         }
         tot -= 2 * (rows + cols); // Don't count borders 
+        tot += 4;
         return tot;
     }
 
@@ -187,21 +245,6 @@ public class TerrainManager : MonoBehaviour {
         return false;
     }
 
-    private class Cell{
-        public int row, col;
-        public Cell(int row, int col) {
-            this.row = row;
-            this.col = col;
-        }
-        public bool Equals(Cell that) {
-            if (this.row == that.row && this.col == that.col) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-    
     private int RandomInteger(int low, int high) {
         int r = Mathf.FloorToInt(Random.Range(low, high+1));
         if (r == high+1) {
@@ -233,6 +276,7 @@ public class TerrainManager : MonoBehaviour {
                 DrawCircle(check_flag, checkpoint_threshold, 1);
                 if (i < path.Count -1) {
                     DrawLine(path[i], path[i+1], Color.green);
+                    Debug.DrawLine(path[i], path[i+1], Color.red, 1f);
                 }
             }
     }
@@ -254,8 +298,16 @@ public class TerrainManager : MonoBehaviour {
         line.SetPositions(points);
         line.tag = "line_renderer";
     }
+
+    public void DrawCircle(Vector3 position, float radius, float lineWidth) {
+        GameObject empty = new GameObject();
+        empty.transform.position = position;
+        DrawCircle(empty, radius, lineWidth);
+    }
+
 }
 
+    
 
 
 [System.Serializable]
@@ -272,6 +324,16 @@ public class TerrainInfo
 
     public Vector3 start_pos;
     public Vector3 goal_pos;
+
+    public float[,] GetPaddedTraversability() {
+        float[,] res = new float[traversability.GetLength(0)+1, traversability.GetLength(1)+1];
+        for (int r = 1; r < traversability.GetLength(0); r++) {
+            for (int c = 1; c < traversability.GetLength(1); c++) {
+                res[r, c] = traversability[r-1, c-1];
+            }
+        }
+        return res;
+    }
 
     public int get_i_index(float x)
     {
@@ -314,8 +376,10 @@ public class TerrainInfo
 
     public void CreateCubes()
     {
-        float x_step = (x_high - x_low) / traversability.GetLength(0);
-        float z_step = (z_high - z_low) / traversability.GetLength(1);
+        // Debug.LogWarning(start_pos.y);
+        // Debug.LogWarning(traversability);
+        float x_step = (x_high - x_low) / x_N;
+        float z_step = (z_high - z_low) / z_N;
         for (int i = 0; i < x_N; i++)
         {
             for (int j = 0; j < z_N; j++)
@@ -324,19 +388,24 @@ public class TerrainInfo
                 {
                     GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     cube.tag = "obstacle";
-                    cube.transform.position = new Vector3(get_x_pos(i), 0.0f, get_z_pos(j));
+                    cube.transform.position = new Vector3(get_x_pos(i), start_pos.y, get_z_pos(j));
                     cube.transform.localScale = new Vector3(x_step, 15.0f, z_step);
                 }
             }
         }
+        int cubes = GameObject.FindGameObjectsWithTag("obstacle").Count();
     }
 
 
 
-    public static TerrainInfo CreateFromJSON(string jsonString)
+    public static TerrainInfo CreateFromJSON(string jsonString, float height)
     {
         //Debug.Log("Reading json");
-        return JsonConvert.DeserializeObject<TerrainInfo>(jsonString);
+        TerrainInfo ti = JsonConvert.DeserializeObject<TerrainInfo>(jsonString);
+        // NOTE: SUper sketchy way to set terrain height
+        ti.start_pos.y = height;
+        ti.goal_pos.y = height;
+        return ti;
     }
 
     public string SaveToString()

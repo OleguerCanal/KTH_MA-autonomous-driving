@@ -66,6 +66,11 @@ public class DroneController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (other.gameObject.name == "Terrain") {
+            Debug.Log("Terrain collision!");
+            return;
+        }
+
         max_acceleration = max_acceleration / 2f;
         transform.position = transform.position - velocity * Time.fixedDeltaTime * 2f; // move back out of collision
         velocity = Vector3.zero;

@@ -17,7 +17,6 @@ public class GameManager : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
-
         terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
        
         start_time = Time.time;
